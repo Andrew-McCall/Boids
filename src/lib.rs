@@ -1,4 +1,3 @@
-use cgmath::prelude::*;
 use std::iter;
 use wgpu::util::DeviceExt;
 use winit::{
@@ -71,7 +70,7 @@ pub struct BoidState {
 impl BoidState {
     pub fn new(count: i32) -> Self {
         let mut boids = Vec::new();
-        for i in 0..count {
+        for _i in 0..count {
             boids.push(Boid {
                 position: [0.0, 0.0, 0.0],
                 color: [1.0, 1.0, 0.0],
