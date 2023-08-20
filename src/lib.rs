@@ -127,6 +127,16 @@ struct State {
 impl State {
     async fn new(window: Window) -> Self {
         let size = window.inner_size();
+        // set title on winit
+        window.set_title("Boids");
+
+        // set random icon
+        let icon = include_bytes!("../assets/icon.png");
+        let icon = image::load_from_memory(icon).unwrap();
+        let icon = icon.to_rgba8();
+        let (width, height) = icon.dimensions();
+        let icon = winit::window::Icon::from_rgba(icon.into_raw(), width, height).unwrap();
+        window.set_window_icon(Some(icon));
 
         // The instance is a handle to our GPU
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
