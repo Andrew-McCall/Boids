@@ -154,10 +154,10 @@ impl BoidState {
         for boid in &self.boids {
             let rotation_offset = self.pre_calculated[boid.rotation as usize];
             instances.push(Instance {
-                x_offset: boid.position[0] * rotation_offset.cos
-                    - boid.position[1] * rotation_offset.sin,
-                y_offset: boid.position[0] * rotation_offset.sin
-                    - boid.position[1] * rotation_offset.cos,
+                x_offset: 1.0 + (boid.position[0] - 1.0) * rotation_offset.cos - 1.0
+                    + (boid.position[1] - 1.0) * rotation_offset.sin,
+                y_offset: 1.0 + (boid.position[0] - 1.0) * rotation_offset.sin - 1.0
+                    + (boid.position[1] - 1.0) * rotation_offset.cos,
                 colour_r: boid.color[0],
                 colour_g: boid.color[1],
                 colour_b: boid.color[2],

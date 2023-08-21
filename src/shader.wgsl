@@ -2,11 +2,11 @@ struct VertexInput {
     @location(0) position: vec3<f32>,
 };
 struct InstanceInput {
-    @location(8) x_offset: f32,
-    @location(9) y_offset: f32,
+    @location(5) x_offset: f32,
+    @location(6) y_offset: f32,
     @location(7) colour_r: f32,
-    @location(5) colour_g: f32,
-    @location(6) colour_b: f32,
+    @location(8) colour_g: f32,
+    @location(9) colour_b: f32,
 };
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
