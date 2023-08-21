@@ -10,14 +10,6 @@ use winit::{
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
     position: [f32; 3],
-    color: [f32; 3],
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct Instance {
-    position: [f32; 3],
-    // rotation: f32,
 }
 
 impl Vertex {
@@ -42,42 +34,111 @@ impl Vertex {
 }
 const VERTICES: &[Vertex] = &[
     Vertex {
-        position: [-0.00868241, 0.049240386, 0.0],
-        color: [1.0, 1.0, 0.0],
+        position: [0.0, -0.06, 0.0],
     },
     Vertex {
-        position: [-0.049513406, 0.006958647, 0.0],
-        color: [1.0, 1.0, 0.0],
+        position: [0.03, 0.00000, 0.0],
     },
     Vertex {
-        position: [-0.021918549, -0.044939706, 0.0],
-        color: [1.0, 1.0, 0.0],
+        position: [-0.03, 0.0, 0.0],
     },
 ];
 
 const INDICES: &[u16] = &[0, 1, 2];
 
+#[repr(C)]
+#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Instance {
+    pub x_offset: f32,
+    pub y_offset: f32,
+    pub colour_r: f32,
+    pub colour_g: f32,
+    pub colour_b: f32,
+}
+
+impl Instance {
+    fn desc() -> wgpu::VertexBufferLayout<'static> {
+        use std::mem;
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<Instance>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &[
+                // X Offset
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    // While our vertex shader only uses locations 0, and 1 now, in later tutorials we'll
+                    // be using 2, 3, and 4, for Vertex. We'll start at slot 5 not conflict with them later
+                    shader_location: 5,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                // Y Offset
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
+                    shader_location: 6,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                // R
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 8]>() as wgpu::BufferAddress,
+                    shader_location: 7,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                // G
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 12]>() as wgpu::BufferAddress,
+                    shader_location: 8,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                // B
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 16]>() as wgpu::BufferAddress,
+                    shader_location: 9,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+            ],
+        }
+    }
+}
 pub struct Boid {
-    pub position: [f32; 3],
+    pub position: [f32; 2],
     pub color: [f32; 3],
     pub rotation: f32,
 }
 
-pub struct BoidState {
-    boids: Vec<Boid>,
+#[derive(Debug, Clone, Copy)]
+pub struct CalculatedPair {
+    pub cos: f32,
+    pub sin: f32,
 }
 
+pub struct BoidState {
+    boids: Vec<Boid>,
+    pre_calculated: [CalculatedPair; 360],
+}
 impl BoidState {
     pub fn new(count: i32) -> Self {
+        let mut calculated = [CalculatedPair { cos: 0.0, sin: 0.0 }; 360];
+
+        for i in 0..360 {
+            let angle: f32 = (i as f32).to_radians();
+            let cos_angle = angle.cos();
+            let sin_angle = angle.sin();
+            calculated[i].cos = cos_angle;
+            calculated[i].sin = sin_angle;
+        }
+
         let mut boids = Vec::new();
         for _i in 0..count {
             boids.push(Boid {
-                position: [0.0, 0.0, 0.0],
-                color: [1.0, 1.0, 0.0],
-                rotation: 0.0,
+                position: [0.0, 0.0],
+                color: [1.0, 1.0, 1.0],
+                rotation: 90.0,
             });
         }
-        Self { boids }
+        Self {
+            boids,
+            pre_calculated: calculated,
+        }
     }
     pub fn update(&mut self) {
         for boid in &mut self.boids {
@@ -91,17 +152,31 @@ impl BoidState {
     pub fn into_instance(&self) -> Vec<Instance> {
         let mut instances = Vec::new();
         for boid in &self.boids {
+            let rotation_offset = self.pre_calculated[boid.rotation as usize];
             instances.push(Instance {
-                position: boid.position,
+                x_offset: boid.position[0] * rotation_offset.cos
+                    - boid.position[1] * rotation_offset.sin,
+                y_offset: boid.position[0] * rotation_offset.sin
+                    - boid.position[1] * rotation_offset.cos,
+                colour_r: boid.color[0],
+                colour_g: boid.color[1],
+                colour_b: boid.color[2],
             });
         }
         instances
     }
-    pub fn randomise(&mut self) {
+    pub fn randomise_position(&mut self) {
         for boid in &mut self.boids {
             boid.position[0] = rand::random::<f32>() * 2.0 - 1.0;
             boid.position[1] = rand::random::<f32>() * 2.0 - 1.0;
-            boid.position[2] = rand::random::<f32>() * 2.0 - 1.0;
+            boid.rotation = rand::random::<f32>() * 360.0;
+        }
+    }
+    pub fn randomise_colour(&mut self) {
+        for boid in &mut self.boids {
+            boid.color[0] = rand::random::<f32>();
+            boid.color[1] = rand::random::<f32>();
+            boid.color[2] = rand::random::<f32>();
         }
     }
 }
@@ -268,7 +343,8 @@ impl State {
         let num_indices: u32 = INDICES.len() as u32;
 
         let mut boids = BoidState::new(100);
-        boids.randomise();
+        boids.randomise_colour();
+        boids.randomise_position();
 
         let instance_data = boids.into_instance();
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -345,12 +421,12 @@ impl State {
                 depth_stencil_attachment: None,
             });
 
-            let instance_data = &self.boids.into_instance();
+            self.instances = self.boids.into_instance();
             self.instance_buffer =
                 self.device
                     .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                         label: Some("Instance Buffer"),
-                        contents: bytemuck::cast_slice(&instance_data),
+                        contents: bytemuck::cast_slice(&self.instances),
                         usage: wgpu::BufferUsages::VERTEX,
                     });
 
@@ -365,45 +441,6 @@ impl State {
         output.present();
 
         Ok(())
-    }
-}
-
-impl Instance {
-    fn desc() -> wgpu::VertexBufferLayout<'static> {
-        use std::mem;
-        wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<Instance>() as wgpu::BufferAddress,
-            // We need to switch from using a step mode of Vertex to Instance
-            // This means that our shaders will only change to use the next
-            // instance when the shader starts processing a new instance
-            step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &[
-                // A mat4 takes up 4 vertex slots as it is technically 4 vec4s. We need to define a slot
-                // for each vec4. We'll have to reassemble the mat4 in the shader.
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    // While our vertex shader only uses locations 0, and 1 now, in later tutorials we'll
-                    // be using 2, 3, and 4, for Vertex. We'll start at slot 5 not conflict with them later
-                    shader_location: 5,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
-                    shader_location: 6,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 8]>() as wgpu::BufferAddress,
-                    shader_location: 7,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 12]>() as wgpu::BufferAddress,
-                    shader_location: 8,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-            ],
-        }
     }
 }
 
@@ -441,7 +478,7 @@ pub async fn run() {
                                 },
                             ..
                         } => {
-                            state.boids.randomise();
+                            state.boids.randomise_position();
                         }
                         WindowEvent::Resized(physical_size) => {
                             state.resize(*physical_size);
