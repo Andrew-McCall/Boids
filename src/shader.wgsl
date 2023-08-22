@@ -5,6 +5,7 @@ struct VertexInput {
 struct InstanceInput {
     @location(2) offset: vec2<f32>,
     @location(3) colour: vec3<f32>,
+    @location(4) sin_cos: vec2<f32>,
 };
 
 struct VertexOutput {

@@ -58,6 +58,7 @@ struct State {
 pub struct Boid {
     offset: [f32; 2],
     color: [f32; 3],
+    sin_cos: [f32; 2],
 }
 
 impl Boid {
@@ -76,6 +77,11 @@ impl Boid {
                     shader_location: 3,
                     format: wgpu::VertexFormat::Float32x3,
                 },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
+                    shader_location: 4,
+                    format: wgpu::VertexFormat::Float32x2,
+                },
             ],
         }
     }
@@ -92,6 +98,7 @@ impl BoidManager {
             boids.push(Boid {
                 offset: [0.0, 0.0],
                 color: [0.0, 0.0, 0.0],
+                sin_cos: [0.0, 0.0],
             });
         }
         Self { boids }
