@@ -28,13 +28,13 @@ impl Vertex {
 
 const VERTICES: &[Vertex] = &[
     Vertex {
-        position: [0.0, 0.06],
+        position: [0.06, 0.0],
+    },
+    Vertex {
+        position: [-0.03, 0.03],
     },
     Vertex {
         position: [-0.03, -0.03],
-    },
-    Vertex {
-        position: [0.03, -0.03],
     },
 ];
 
@@ -70,7 +70,7 @@ pub struct Instance {
 impl Instance {
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Boid>() as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<Instance>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
                 wgpu::VertexAttribute {
@@ -103,7 +103,7 @@ impl BoidManager {
         for _ in 0..count {
             boids.push(Boid {
                 position: [0.0, 0.0],
-                color: [1.0, 1.0, 1.0],
+                color: [0.0, 0.0, 0.0],
                 rotation: 0.0,
             });
         }
@@ -112,7 +112,9 @@ impl BoidManager {
 
     pub fn update(&mut self) {
         for boid in &mut self.boids {
-            boid.rotation += 0.1;
+            boid.rotation += 0.015;
+            boid.position[0] += boid.rotation.cos() / 100.0;
+            boid.position[1] += boid.rotation.sin() / 100.0;
         }
     }
 
