@@ -28,13 +28,13 @@ impl Vertex {
 
 const VERTICES: &[Vertex] = &[
     Vertex {
-        position: [0.0, -0.6],
+        position: [0.0, 0.06],
     },
     Vertex {
-        position: [0.3, 0.0],
+        position: [-0.03, -0.03],
     },
     Vertex {
-        position: [-0.3, 0.0],
+        position: [0.03, -0.03],
     },
 ];
 
@@ -108,6 +108,12 @@ impl BoidManager {
             });
         }
         Self { boids }
+    }
+
+    pub fn update(&mut self) {
+        for boid in &mut self.boids {
+            boid.rotation += 0.1;
+        }
     }
 
     pub fn into_instance_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
@@ -372,7 +378,7 @@ pub async fn run() {
                                 },
                             ..
                         } => {
-                            // state.boids.randomise_position();
+                            state.boid_manager.update();
                         }
                         WindowEvent::Resized(physical_size) => {
                             state.resize(*physical_size);
