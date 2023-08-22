@@ -53,15 +53,21 @@ struct State {
     boid_manager: BoidManager,
 }
 
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Boid {
-    offset: [f32; 2],
+    position: [f32; 2],
     color: [f32; 3],
-    sin_cos: [f32; 2],
+    rotation: f32, // Radians
 }
 
-impl Boid {
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Instance {
+    pub offset: [f32; 2],
+    pub color: [f32; 3],
+    pub sin_cos: [f32; 2],
+}
+
+impl Instance {
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Boid>() as wgpu::BufferAddress,
@@ -96,18 +102,28 @@ impl BoidManager {
         let mut boids = Vec::with_capacity(count);
         for _ in 0..count {
             boids.push(Boid {
-                offset: [0.0, 0.0],
-                color: [0.0, 0.0, 0.0],
-                sin_cos: [0.0, 0.0],
+                position: [0.0, 0.0],
+                color: [1.0, 1.0, 1.0],
+                rotation: 0.0,
             });
         }
         Self { boids }
     }
 
     pub fn into_instance_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
+        let content: Vec<Instance> = self
+            .boids
+            .iter()
+            .map(|boid| Instance {
+                offset: boid.position,
+                color: boid.color,
+                sin_cos: [boid.rotation.sin(), boid.rotation.cos()],
+            })
+            .collect();
+
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Boid Instance Buffer"),
-            contents: bytemuck::cast_slice(&self.boids),
+            contents: bytemuck::cast_slice(&content),
             usage: wgpu::BufferUsages::VERTEX,
         })
     }
@@ -188,7 +204,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[Vertex::desc(), Boid::desc()],
+                buffers: &[Vertex::desc(), Instance::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
