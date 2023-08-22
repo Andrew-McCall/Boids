@@ -1,3 +1,4 @@
+use rand::Rng;
 use std::{iter, mem};
 use wgpu::util::DeviceExt;
 use winit::{
@@ -100,11 +101,16 @@ pub struct BoidManager {
 impl BoidManager {
     pub fn new(count: usize) -> Self {
         let mut boids = Vec::with_capacity(count);
+
+        let mut rng = rand::thread_rng();
         for _ in 0..count {
             boids.push(Boid {
-                position: [0.0, 0.0],
-                color: [0.0, 0.0, 0.0],
-                rotation: 0.0,
+                position: [
+                    100.0 * rng.gen::<f32>() - 50.0,
+                    100.0 * rng.gen::<f32>() - 50.0,
+                ],
+                color: [rng.gen(), rng.gen(), rng.gen()],
+                rotation: rng.gen::<f32>() * 2.0 * std::f32::consts::PI,
             });
         }
         Self { boids }
@@ -113,8 +119,11 @@ impl BoidManager {
     pub fn update(&mut self) {
         for boid in &mut self.boids {
             boid.rotation += 0.015;
-            boid.position[0] += boid.rotation.cos() / 100.0;
-            boid.position[1] += boid.rotation.sin() / 100.0;
+            boid.position[0] += boid.rotation.cos();
+            boid.position[1] += boid.rotation.sin();
+
+            boid.position[0] = ((boid.position[0] + 100.0).rem_euclid(200.0)) - 100.0;
+            boid.position[1] = ((boid.position[1] + 100.0).rem_euclid(200.0)) - 100.0;
         }
     }
 
@@ -123,7 +132,7 @@ impl BoidManager {
             .boids
             .iter()
             .map(|boid| Instance {
-                offset: boid.position,
+                offset: [boid.position[0] / 100.0, boid.position[1] / 100.0],
                 color: boid.color,
                 sin_cos: [boid.rotation.sin(), boid.rotation.cos()],
             })
@@ -134,6 +143,20 @@ impl BoidManager {
             contents: bytemuck::cast_slice(&content),
             usage: wgpu::BufferUsages::VERTEX,
         })
+    }
+
+    pub fn randomise_colour(&mut self) {
+        let mut rng = rand::thread_rng();
+        for boid in &mut self.boids {
+            boid.color = [rng.gen(), rng.gen(), rng.gen()];
+        }
+    }
+
+    pub fn randomise_position(&mut self) {
+        let mut rng = rand::thread_rng();
+        for boid in &mut self.boids {
+            boid.position = [rng.gen(), rng.gen()];
+        }
     }
 }
 
