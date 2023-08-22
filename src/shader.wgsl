@@ -20,7 +20,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.color = vec3<f32>(instance.colour.x, instance.colour.y, instance.colour.z);
-    out.clip_position = vec4<f32>(model.position.x+instance.offset.x, model.position.y+instance.offset.y, 0.0, 1.0);
+    out.clip_position = vec4<f32>((model.position.x*instance.sin_cos.y-model.position.y*instance.sin_cos.x)+instance.offset.x, (model.position.x*instance.sin_cos.x+model.position.y*instance.sin_cos.y)+instance.offset.y, 0.0, 1.0);
     return out;
 }
 

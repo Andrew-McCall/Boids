@@ -84,7 +84,7 @@ impl Instance {
                     format: wgpu::VertexFormat::Float32x3,
                 },
                 wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
+                    offset: mem::size_of::<[f32; 5]>() as wgpu::BufferAddress,
                     shader_location: 4,
                     format: wgpu::VertexFormat::Float32x2,
                 },
@@ -253,7 +253,7 @@ impl State {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        let boid_manager = BoidManager::new(2);
+        let boid_manager = BoidManager::new(1);
         let instance_buffer = boid_manager.into_instance_buffer(&device);
 
         Self {
