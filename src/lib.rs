@@ -1,4 +1,4 @@
-use std::iter;
+use std::{iter, mem};
 use wgpu::util::DeviceExt;
 use winit::{
     event::*,
@@ -9,7 +9,7 @@ use winit::{
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
-    position: [f32; 3],
+    position: [f32; 2],
 }
 
 impl Vertex {
@@ -17,170 +17,28 @@ impl Vertex {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: 0,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-                wgpu::VertexAttribute {
-                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-                    shader_location: 1,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-            ],
+            attributes: &[wgpu::VertexAttribute {
+                offset: 0,
+                shader_location: 0,
+                format: wgpu::VertexFormat::Float32x3,
+            }],
         }
     }
 }
+
 const VERTICES: &[Vertex] = &[
     Vertex {
-        position: [0.0, -0.06, 0.0],
+        position: [0.0, -0.6],
     },
     Vertex {
-        position: [0.03, 0.00000, 0.0],
+        position: [0.3, 0.0],
     },
     Vertex {
-        position: [-0.03, 0.0, 0.0],
+        position: [-0.3, 0.0],
     },
 ];
 
 const INDICES: &[u16] = &[0, 1, 2];
-
-#[repr(C)]
-#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct Instance {
-    pub x_offset: f32,
-    pub y_offset: f32,
-    pub colour_r: f32,
-    pub colour_g: f32,
-    pub colour_b: f32,
-}
-
-impl Instance {
-    fn desc() -> wgpu::VertexBufferLayout<'static> {
-        use std::mem;
-        wgpu::VertexBufferLayout {
-            array_stride: mem::size_of::<Instance>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &[
-                // X Offset
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    // While our vertex shader only uses locations 0, and 1 now, in later tutorials we'll
-                    // be using 2, 3, and 4, for Vertex. We'll start at slot 5 not conflict with them later
-                    shader_location: 5,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                // Y Offset
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
-                    shader_location: 6,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                // R
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 8]>() as wgpu::BufferAddress,
-                    shader_location: 7,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                // G
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 12]>() as wgpu::BufferAddress,
-                    shader_location: 8,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-                // B
-                wgpu::VertexAttribute {
-                    offset: mem::size_of::<[f32; 16]>() as wgpu::BufferAddress,
-                    shader_location: 9,
-                    format: wgpu::VertexFormat::Float32x4,
-                },
-            ],
-        }
-    }
-}
-pub struct Boid {
-    pub position: [f32; 2],
-    pub color: [f32; 3],
-    pub rotation: f32,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct CalculatedPair {
-    pub cos: f32,
-    pub sin: f32,
-}
-
-pub struct BoidState {
-    boids: Vec<Boid>,
-    pre_calculated: [CalculatedPair; 360],
-}
-impl BoidState {
-    pub fn new(count: i32) -> Self {
-        let mut calculated = [CalculatedPair { cos: 0.0, sin: 0.0 }; 360];
-
-        for i in 0..360 {
-            let angle: f32 = (i as f32).to_radians();
-            let cos_angle = angle.cos();
-            let sin_angle = angle.sin();
-            calculated[i].cos = cos_angle;
-            calculated[i].sin = sin_angle;
-        }
-
-        let mut boids = Vec::new();
-        for _i in 0..count {
-            boids.push(Boid {
-                position: [0.0, 0.0],
-                color: [1.0, 1.0, 1.0],
-                rotation: 90.0,
-            });
-        }
-        Self {
-            boids,
-            pre_calculated: calculated,
-        }
-    }
-    pub fn update(&mut self) {
-        for boid in &mut self.boids {
-            boid.position[0] += 0.01;
-        }
-    }
-    pub fn get_boids(&self) -> &Vec<Boid> {
-        &self.boids
-    }
-
-    pub fn into_instance(&self) -> Vec<Instance> {
-        let mut instances = Vec::new();
-        for boid in &self.boids {
-            let rotation_offset = self.pre_calculated[boid.rotation as usize];
-            instances.push(Instance {
-                x_offset: 1.0 + (boid.position[0] - 1.0) * rotation_offset.cos - 1.0
-                    + (boid.position[1] - 1.0) * rotation_offset.sin,
-                y_offset: 1.0 + (boid.position[0] - 1.0) * rotation_offset.sin - 1.0
-                    + (boid.position[1] - 1.0) * rotation_offset.cos,
-                colour_r: boid.color[0],
-                colour_g: boid.color[1],
-                colour_b: boid.color[2],
-            });
-        }
-        instances
-    }
-    pub fn randomise_position(&mut self) {
-        for boid in &mut self.boids {
-            boid.position[0] = rand::random::<f32>() * 2.0 - 1.0;
-            boid.position[1] = rand::random::<f32>() * 2.0 - 1.0;
-            boid.rotation = rand::random::<f32>() * 360.0;
-        }
-    }
-    pub fn randomise_colour(&mut self) {
-        for boid in &mut self.boids {
-            boid.color[0] = rand::random::<f32>();
-            boid.color[1] = rand::random::<f32>();
-            boid.color[2] = rand::random::<f32>();
-        }
-    }
-}
-
 struct State {
     surface: wgpu::Surface,
     device: wgpu::Device,
@@ -190,21 +48,68 @@ struct State {
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
-    num_indices: u32,
-    window: Window,
-    instances: Vec<Instance>,
     instance_buffer: wgpu::Buffer,
+    window: Window,
+    boid_manager: BoidManager,
+}
 
-    boids: BoidState,
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Boid {
+    offset: [f32; 2],
+    color: [f32; 3],
+}
+
+impl Boid {
+    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<Boid>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 2,
+                    format: wgpu::VertexFormat::Float32x2,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
+                    shader_location: 3,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+            ],
+        }
+    }
+}
+
+pub struct BoidManager {
+    boids: Vec<Boid>,
+}
+
+impl BoidManager {
+    pub fn new(count: usize) -> Self {
+        let mut boids = Vec::with_capacity(count);
+        for _ in 0..count {
+            boids.push(Boid {
+                offset: [0.0, 0.0],
+                color: [0.0, 0.0, 0.0],
+            });
+        }
+        Self { boids }
+    }
+
+    pub fn into_instance_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
+        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Boid Instance Buffer"),
+            contents: bytemuck::cast_slice(&self.boids),
+            usage: wgpu::BufferUsages::VERTEX,
+        })
+    }
 }
 
 impl State {
     async fn new(window: Window) -> Self {
         let size = window.inner_size();
-        // set title on winit
         window.set_title("Boids");
-
-        // set random icon
         let icon = include_bytes!("../assets/icon.png");
         let icon = image::load_from_memory(icon).unwrap();
         let icon = icon.to_rgba8();
@@ -212,17 +117,11 @@ impl State {
         let icon = winit::window::Icon::from_rgba(icon.into_raw(), width, height).unwrap();
         window.set_window_icon(Some(icon));
 
-        // The instance is a handle to our GPU
-        // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             dx12_shader_compiler: Default::default(),
         });
 
-        // # Safety
-        //
-        // The surface needs to live as long as the window that created it.
-        // State owns the window so this should be safe.
         let surface = unsafe { instance.create_surface(&window) }.unwrap();
 
         let adapter = instance
@@ -239,13 +138,7 @@ impl State {
                 &wgpu::DeviceDescriptor {
                     label: None,
                     features: wgpu::Features::empty(),
-                    // WebGL doesn't support all of wgpu's features, so if
-                    // we're building for the web we'll have to disable some.
-                    limits: if cfg!(target_arch = "wasm32") {
-                        wgpu::Limits::downlevel_webgl2_defaults()
-                    } else {
-                        wgpu::Limits::default()
-                    },
+                    limits: wgpu::Limits::default(),
                 },
                 None, // Trace path
             )
@@ -253,9 +146,6 @@ impl State {
             .unwrap();
 
         let surface_caps = surface.get_capabilities(&adapter);
-        // Shader code in this tutorial assumes an Srgb surface texture. Using a different
-        // one will result all the colors comming out darker. If you want to support non
-        // Srgb surfaces, you'll need to account for that when drawing to the frame.
         let surface_format = surface_caps
             .formats
             .iter()
@@ -291,7 +181,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[Vertex::desc(), Instance::desc()],
+                buffers: &[Vertex::desc(), Boid::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -340,18 +230,8 @@ impl State {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        let num_indices: u32 = INDICES.len() as u32;
-
-        let mut boids = BoidState::new(100);
-        boids.randomise_colour();
-        boids.randomise_position();
-
-        let instance_data = boids.into_instance();
-        let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Instance Buffer"),
-            contents: bytemuck::cast_slice(&instance_data),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
+        let boid_manager = BoidManager::new(2);
+        let instance_buffer = boid_manager.into_instance_buffer(&device);
 
         Self {
             surface,
@@ -362,11 +242,9 @@ impl State {
             render_pipeline,
             vertex_buffer,
             index_buffer,
-            num_indices,
-            window,
-            instances: instance_data,
             instance_buffer,
-            boids,
+            window,
+            boid_manager,
         }
     }
 
@@ -421,20 +299,13 @@ impl State {
                 depth_stencil_attachment: None,
             });
 
-            self.instances = self.boids.into_instance();
-            self.instance_buffer =
-                self.device
-                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        label: Some("Instance Buffer"),
-                        contents: bytemuck::cast_slice(&self.instances),
-                        usage: wgpu::BufferUsages::VERTEX,
-                    });
+            self.instance_buffer = self.boid_manager.into_instance_buffer(&self.device);
 
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
+            render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
         }
 
         self.queue.submit(iter::once(encoder.finish()));
@@ -478,7 +349,7 @@ pub async fn run() {
                                 },
                             ..
                         } => {
-                            state.boids.randomise_position();
+                            // state.boids.randomise_position();
                         }
                         WindowEvent::Resized(physical_size) => {
                             state.resize(*physical_size);

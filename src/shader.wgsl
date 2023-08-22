@@ -1,13 +1,12 @@
 struct VertexInput {
-    @location(0) position: vec3<f32>,
+    @location(0) position: vec2<f32>,
 };
+
 struct InstanceInput {
-    @location(5) x_offset: f32,
-    @location(6) y_offset: f32,
-    @location(7) colour_r: f32,
-    @location(8) colour_g: f32,
-    @location(9) colour_b: f32,
+    @location(2) offset: vec2<f32>,
+    @location(3) colour: vec3<f32>,
 };
+
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(1) color: vec3<f32>,
@@ -19,8 +18,8 @@ fn vs_main(
     instance: InstanceInput,
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.color = vec3<f32>(instance.colour_r, instance.colour_g, instance.colour_b);
-    out.clip_position = vec4<f32>(model.position.x+instance.x_offset, model.position.y+instance.y_offset, model.position.z, 1.0);
+    out.color = vec3<f32>(instance.colour.x, instance.colour.y, instance.colour.z);
+    out.clip_position = vec4<f32>(model.position.x+instance.offset.x, model.position.y+instance.offset.y, 0.0, 1.0);
     return out;
 }
 
