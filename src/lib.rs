@@ -29,13 +29,13 @@ impl Vertex {
 
 const VERTICES: &[Vertex] = &[
     Vertex {
-        position: [0.02, 0.0],
+        position: [0.025, 0.0],
     },
     Vertex {
-        position: [-0.01, 0.01],
+        position: [-0.0125, 0.0125],
     },
     Vertex {
-        position: [-0.01, -0.01],
+        position: [-0.0125, -0.0125],
     },
 ];
 
@@ -112,7 +112,11 @@ impl BoidManager {
                     100.0 * rng.gen::<f32>() - 50.0,
                     100.0 * rng.gen::<f32>() - 50.0,
                 ],
-                color: [rng.gen(), rng.gen(), rng.gen()],
+                color: [
+                    rng.gen::<f32>() * 0.7,
+                    rng.gen::<f32>() * 0.7,
+                    rng.gen::<f32>() * 0.7,
+                ],
                 rotation: rng.gen::<f32>() * 2.0 * std::f32::consts::PI,
                 speed: rng.gen::<f32>() * 2.0 + 1.0,
             });
@@ -138,7 +142,7 @@ impl BoidManager {
                 let dy = boid.position[1] - other.position[1];
 
                 let dist = dx.powi(2) + dy.powi(2);
-                if dist > 350.0 {
+                if dist > 300.0 {
                     continue; // to far
                 }
 
@@ -159,16 +163,20 @@ impl BoidManager {
                     turn += 1;
                 }
                 // boid.color = [0.5, 1.0, 0.5];
-                if dist < 100.0 && dot > 0.6 {
+                if dist < 50.0 && dot > 0.6 {
                     // boid.color = [1.0, 0.0, 0.0];
-                    boid.rotation += 0.001;
+                    if boid.rotation > other.rotation {
+                        boid.rotation += 0.0015;
+                    } else {
+                        boid.rotation -= 0.0015;
+                    }
                 }
             }
 
             boid.speed += 0.0001 * speed.max(-1).min(1) as f32;
             boid.speed = boid.speed.max(1.0).min(3.0);
 
-            boid.rotation += 0.0006 * turn.max(-1).min(1) as f32;
+            boid.rotation += 0.0010 * turn.max(-1).min(1) as f32;
 
             boid.position[0] += boid.rotation.cos() * boid.speed / 300.0;
             boid.position[1] += boid.rotation.sin() * boid.speed / 300.0;
