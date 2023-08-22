@@ -29,13 +29,13 @@ impl Vertex {
 
 const VERTICES: &[Vertex] = &[
     Vertex {
-        position: [0.06, 0.0],
+        position: [0.02, 0.0],
     },
     Vertex {
-        position: [-0.03, 0.03],
+        position: [-0.01, 0.01],
     },
     Vertex {
-        position: [-0.03, -0.03],
+        position: [-0.01, -0.01],
     },
 ];
 
@@ -52,12 +52,15 @@ struct State {
     instance_buffer: wgpu::Buffer,
     window: Window,
     boid_manager: BoidManager,
+    running: bool,
 }
 
+#[derive(Clone)]
 pub struct Boid {
     position: [f32; 2],
     color: [f32; 3],
     rotation: f32, // Radians
+    speed: f32,
 }
 
 #[repr(C)]
@@ -111,19 +114,67 @@ impl BoidManager {
                 ],
                 color: [rng.gen(), rng.gen(), rng.gen()],
                 rotation: rng.gen::<f32>() * 2.0 * std::f32::consts::PI,
+                speed: rng.gen::<f32>() * 2.0 + 1.0,
             });
         }
+
         Self { boids }
     }
 
     pub fn update(&mut self) {
+        // let mut avg_rot = 0.0;
+        // for boid in &mut self.boids {
+        //     avg_rot += boid.rotation;
+        // }
+        // avg_rot /= self.boids.len() as f32;
+        let old_boids = self.boids.clone();
         for boid in &mut self.boids {
-            boid.rotation += 0.015;
-            boid.position[0] += boid.rotation.cos();
-            boid.position[1] += boid.rotation.sin();
+            let mut speed = 0;
+            let mut turn = 0;
 
-            boid.position[0] = ((boid.position[0] + 100.0).rem_euclid(200.0)) - 100.0;
-            boid.position[1] = ((boid.position[1] + 100.0).rem_euclid(200.0)) - 100.0;
+            // boid.color = [0.0, 1.0, 0.0];
+            for other in &old_boids {
+                let dx = boid.position[0] - other.position[0];
+                let dy = boid.position[1] - other.position[1];
+
+                let dist = dx.powi(2) + dy.powi(2);
+                if dist > 350.0 {
+                    continue; // to far
+                }
+
+                let dot = boid.rotation.cos() * (-dx) + boid.rotation.sin() * (-dy);
+
+                if dot < 0.2 {
+                    continue; // not in fov
+                }
+
+                if boid.speed > other.speed {
+                    speed -= 1;
+                } else if boid.speed < other.speed {
+                    speed += 1;
+                }
+                if boid.rotation > other.rotation {
+                    turn -= 1;
+                } else if boid.rotation < other.rotation {
+                    turn += 1;
+                }
+                // boid.color = [0.5, 1.0, 0.5];
+                if dist < 100.0 && dot > 0.6 {
+                    // boid.color = [1.0, 0.0, 0.0];
+                    boid.rotation += 0.001;
+                }
+            }
+
+            boid.speed += 0.0001 * speed.max(-1).min(1) as f32;
+            boid.speed = boid.speed.max(1.0).min(3.0);
+
+            boid.rotation += 0.0006 * turn.max(-1).min(1) as f32;
+
+            boid.position[0] += boid.rotation.cos() * boid.speed / 300.0;
+            boid.position[1] += boid.rotation.sin() * boid.speed / 300.0;
+
+            boid.position[0] = ((boid.position[0] + 105.0).rem_euclid(210.0)) - 105.0;
+            boid.position[1] = ((boid.position[1] + 105.0).rem_euclid(210.0)) - 105.0;
         }
     }
 
@@ -137,7 +188,6 @@ impl BoidManager {
                 sin_cos: [boid.rotation.sin(), boid.rotation.cos()],
             })
             .collect();
-
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Boid Instance Buffer"),
             contents: bytemuck::cast_slice(&content),
@@ -157,6 +207,10 @@ impl BoidManager {
         for boid in &mut self.boids {
             boid.position = [rng.gen(), rng.gen()];
         }
+    }
+
+    pub fn boids_len(&self) -> usize {
+        self.boids.len()
     }
 }
 
@@ -284,7 +338,7 @@ impl State {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        let boid_manager = BoidManager::new(1);
+        let boid_manager = BoidManager::new(200);
         let instance_buffer = boid_manager.into_instance_buffer(&device);
 
         Self {
@@ -299,6 +353,7 @@ impl State {
             instance_buffer,
             window,
             boid_manager,
+            running: false,
         }
     }
 
@@ -359,7 +414,11 @@ impl State {
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
+            render_pass.draw_indexed(
+                0..INDICES.len() as u32,
+                0,
+                0..self.boid_manager.boids_len() as u32,
+            );
         }
 
         self.queue.submit(iter::once(encoder.finish()));
@@ -403,7 +462,8 @@ pub async fn run() {
                                 },
                             ..
                         } => {
-                            state.boid_manager.update();
+                            state.running = !state.running;
+                            // state.boid_manager.update();
                         }
                         WindowEvent::Resized(physical_size) => {
                             state.resize(*physical_size);
@@ -435,7 +495,11 @@ pub async fn run() {
                 // request it.
                 state.window().request_redraw();
             }
-            _ => {}
+            _ => {
+                if state.running {
+                    state.boid_manager.update()
+                }
+            }
         }
     });
 }
