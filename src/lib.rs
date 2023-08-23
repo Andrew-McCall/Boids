@@ -163,20 +163,22 @@ impl BoidManager {
                     turn += 1;
                 }
                 // boid.color = [0.5, 1.0, 0.5];
-                if dist < 50.0 && dot > 0.7 {
+                if dist < 40.0 && dot > 0.7 {
                     // boid.color = [1.0, 0.0, 0.0];
                     if boid.rotation > other.rotation {
-                        boid.rotation += 0.0000025 * (50.0 - dist).powi(2);
+                        boid.rotation += 0.00000025 * (40.0 - dist).powi(3);
                     } else {
-                        boid.rotation -= 0.0000025 * (50.0 - dist).powi(2);
+                        boid.rotation -= 0.00000025 * (40.0 - dist).powi(3);
                     }
                 }
             }
 
-            boid.speed += 0.0001 * speed.max(-1).min(1) as f32;
+            boid.speed += 0.00012 * speed.max(-1).min(1) as f32;
             boid.speed = boid.speed.max(1.0).min(3.0);
 
-            boid.rotation += 0.0015 * turn.max(-1).min(1) as f32;
+            boid.rotation += 0.00175 * turn.max(-1).min(1) as f32;
+            // random turn
+            boid.rotation += 0.0005 * (rand::thread_rng().gen::<f32>() - 0.5);
 
             boid.position[0] += boid.rotation.cos() * boid.speed / 300.0;
             boid.position[1] += boid.rotation.sin() * boid.speed / 300.0;
@@ -346,7 +348,7 @@ impl State {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        let boid_manager = BoidManager::new(300);
+        let boid_manager = BoidManager::new(250);
         let instance_buffer = boid_manager.into_instance_buffer(&device);
 
         Self {
