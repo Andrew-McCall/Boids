@@ -19,16 +19,14 @@ I used Rust, WGpu and Winit. My goal was to learn a lower level graphics API and
 ## Showcase
 Here is are some videos I made of the program running (Uploaded to Imgur). 
 
-The first is boids without rules, just a slightly drift the to left.
-[Imgur Link One](https://i.imgur.com/cFLFrEi.mp4)
+The first is boids without rules, just a slightly drift the to left. [Imgur Link One](https://i.imgur.com/cFLFrEi.mp4)
 
-The second is with rules.
-[Imgur Link Two](https://i.imgur.com/GmyLm3g.mp4)
+The second is with rules. [Imgur Link Two](https://i.imgur.com/GmyLm3g.mp4)
 
-The third is the current state of the program with rules and tweaked settings.
-[Imgur Link Three](https://i.imgur.com/sBDxgYi.mp4)
+The third is the current state of the program with rules and tweaked settings. [Imgur Link Three](https://i.imgur.com/sBDxgYi.mp4)
 
-Short Gif
+Short Gif of the current state.
+
 ![Gif](https://github.com/Andrew-McCall/Boids/blob/main/assets/ShortGif.gif?raw=true)
 
 ## Improvements
