@@ -17,14 +17,19 @@ Source: [Wikipedia](https://en.wikipedia.org/wiki/Boids)
 I used Rust, WGpu and Winit. My goal was to learn a lower level graphics API and to further cement my knowledge of Rust. With WGpu and Winit my code should run on every platform that supports Vulkan, Metal or DX12. (I have only tested it on Windows 10.) 
 
 ## Showcase
-Here is are some gifs I made of the program running. The first is boids without rules, the second is with rules. The third is the current state of the program with rules and tweaked settings.
+Here is are some videos I made of the program running (Uploaded to Imgur). 
 
-[![Boids Without Rules](https://i.imgur.com/cFLFrEi.mp4)]
+The first is boids without rules, just a slightly drift the to left.
+[Imgur Link One](https://i.imgur.com/cFLFrEi.mp4)
 
-[![Boids Beta](https://i.imgur.com/GmyLm3g.mp4)]
+The second is with rules.
+[Imgur Link Two](https://i.imgur.com/GmyLm3g.mp4)
 
-[![Boids Current](https://i.imgur.com/sBDxgYi.mp4)]
+The third is the current state of the program with rules and tweaked settings.
+[Imgur Link Three](https://i.imgur.com/sBDxgYi.mp4)
 
+Short Gif
+![Gif](https://github.com/Andrew-McCall/Boids/blob/main/assets/ShortGif.gif?raw=true)
 
 ## Improvements
 - [ ] Multi-threading
