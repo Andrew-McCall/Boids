@@ -19,11 +19,12 @@ I used Rust, WGpu and Winit. My goal was to learn a lower level graphics API and
 ## Showcase
 Here is are some gifs I made of the program running. The first is boids without rules, the second is with rules. The third is the current state of the program with rules and tweaked settings.
 
-![Boids Without Rules](https://i.imgur.com/cFLFrEi.mp4)
+[![Boids Without Rules](https://i.imgur.com/cFLFrEi.mp4)]
 
-![Boids Beta](https://i.imgur.com/GmyLm3g.mp4)
+[![Boids Beta](https://i.imgur.com/GmyLm3g.mp4)]
 
-![Boids Current](https://i.imgur.com/sBDxgYi.mp4)
+[![Boids Current](https://i.imgur.com/sBDxgYi.mp4)]
+
 
 ## Improvements
 - [ ] Multi-threading
