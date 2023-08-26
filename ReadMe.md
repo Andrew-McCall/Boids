@@ -31,7 +31,7 @@ Short Gif of the current state.
 
 ## Improvements
 - [ ] Multi-threading
-- [ ] Oct-Tree / Other Optimization
+- [ ] Quad-Tree / Sin and Cos Caching (Other Optimization)
 - [ ] Add more rules
 - [ ] Add a GUI / Menu
 - [ ] 3D Refactor
