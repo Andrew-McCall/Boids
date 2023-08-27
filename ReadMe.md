@@ -30,6 +30,7 @@ Short Gif of the current state.
 ![Gif](https://github.com/Andrew-McCall/Boids/blob/main/assets/ShortGif.gif?raw=true)
 
 ## Improvements
+- [ ] 2D fish/bird Model or Texture
 - [ ] Multi-threading
 - [ ] Quad-Tree / Sin and Cos Caching (Other Optimization)
 - [ ] Add more rules
